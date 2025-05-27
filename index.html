@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pixel Tic Tac Toe 2</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -13,6 +13,18 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/animations.css">
+
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){ dataLayer.push(arguments); }
+      gtag('consent', 'default', {
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'ad_storage': 'denied',
+        'analytics_storage': 'denied',
+        'wait_for_update': 500
+      });
+    </script>
   </head>
   <body class="min-h-screen">
     <div class="floating-particles" id="particles"></div>
@@ -20,40 +32,61 @@
 
     <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 max-w-xl mx-auto bg-white border border-gray-300 shadow-lg p-4 rounded-xl z-50 text-sm flex flex-col sm:flex-row justify-between items-center gap-2">
       <span>
-        We use cookies to analyze traffic and improve your experience. By using this site, you consent to the use of Google Analytics.
+        We use cookies to analyze traffic and improve your experience. Choose your preference:
       </span>
-      <button id="accept-cookies" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-        Accept
-      </button>
+      <div class="flex gap-2">
+        <button id="accept-cookies" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+          Accept
+        </button>
+        <button id="reject-cookies" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400 transition">
+          Reject
+        </button>
+      </div>
     </div>
 
     <script>
-      function loadAnalytics() {
-        const script1 = document.createElement("script");
-        script1.src = "https://www.googletagmanager.com/gtag/js?id=G-L1XDPVMY0C";
-        script1.async = true;
-        document.head.appendChild(script1);
+      function injectAnalytics() {
+        const script = document.createElement("script");
+        script.src = "https://www.googletagmanager.com/gtag/js?id=G-L1XDPVMY0C";
+        script.async = true;
+        document.head.appendChild(script);
 
-        const script2 = document.createElement("script");
-        script2.innerHTML = `
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
+        script.onload = () => {
           gtag('js', new Date());
           gtag('config', 'G-L1XDPVMY0C');
-        `;
-        document.head.appendChild(script2);
+        };
       }
 
-      if (localStorage.getItem("cookiesAccepted") === "true") {
+      function handleConsent(choice) {
+        if (choice === "accepted") {
+          gtag('consent', 'update', {
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted',
+            'ad_storage': 'granted',
+            'analytics_storage': 'granted'
+          });
+          injectAnalytics();
+        } else {
+          gtag('consent', 'update', {
+            'ad_user_data': 'denied',
+            'ad_personalization': 'denied',
+            'ad_storage': 'denied',
+            'analytics_storage': 'denied'
+          });
+        }
+        localStorage.setItem("cookiesConsent", choice);
         document.getElementById("cookie-banner").style.display = "none";
-        loadAnalytics();
       }
 
-      document.getElementById("accept-cookies").addEventListener("click", function () {
-        localStorage.setItem("cookiesAccepted", "true");
-        document.getElementById("cookie-banner").style.display = "none";
-        loadAnalytics();
-      });
+      const savedConsent = localStorage.getItem("cookiesConsent");
+      if (savedConsent === "accepted") {
+        handleConsent("accepted");
+      } else if (savedConsent === "rejected") {
+        handleConsent("rejected");
+      }
+
+      document.getElementById("accept-cookies").addEventListener("click", () => handleConsent("accepted"));
+      document.getElementById("reject-cookies").addEventListener("click", () => handleConsent("rejected"));
     </script>
 
     <script type="text/babel" src="js/audio/AudioManager.js"></script>

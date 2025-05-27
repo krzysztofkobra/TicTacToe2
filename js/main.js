@@ -1,4 +1,3 @@
-// Main Application Component
 const TicTacToe2 = () => {
   const { useState, useEffect } = React;
 

@@ -1,4 +1,3 @@
-// Background Music System
 const BackgroundMusic = {
   isPlaying: false,
   oscillators: [],
@@ -64,5 +63,4 @@ const BackgroundMusic = {
   }
 };
 
-// Add BackgroundMusic to AudioManager for compatibility
 AudioManager.backgroundMusic = BackgroundMusic;

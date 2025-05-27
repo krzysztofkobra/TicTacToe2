@@ -1,4 +1,3 @@
-// Particle System Component
 const ParticleSystem = () => {
   const { useEffect } = React;
 

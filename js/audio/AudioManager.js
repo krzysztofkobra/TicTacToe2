@@ -1,4 +1,3 @@
-// Audio Context and Sound Generation
 const AudioManager = {
   audioContext: null,
   
