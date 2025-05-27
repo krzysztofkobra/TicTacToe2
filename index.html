@@ -9,15 +9,7 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-L1XDPVMY0C"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
 
-      gtag('config', 'G-L1XDPVMY0C');
-    </script>
-    
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/animations.css">
@@ -25,6 +17,44 @@
   <body class="min-h-screen">
     <div class="floating-particles" id="particles"></div>
     <div id="root"></div>
+
+    <div id="cookie-banner" class="fixed bottom-4 left-4 right-4 max-w-xl mx-auto bg-white border border-gray-300 shadow-lg p-4 rounded-xl z-50 text-sm flex flex-col sm:flex-row justify-between items-center gap-2">
+      <span>
+        We use cookies to analyze traffic and improve your experience. By using this site, you consent to the use of Google Analytics.
+      </span>
+      <button id="accept-cookies" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        Accept
+      </button>
+    </div>
+
+    <script>
+      function loadAnalytics() {
+        const script1 = document.createElement("script");
+        script1.src = "https://www.googletagmanager.com/gtag/js?id=G-L1XDPVMY0C";
+        script1.async = true;
+        document.head.appendChild(script1);
+
+        const script2 = document.createElement("script");
+        script2.innerHTML = `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-L1XDPVMY0C');
+        `;
+        document.head.appendChild(script2);
+      }
+
+      if (localStorage.getItem("cookiesAccepted") === "true") {
+        document.getElementById("cookie-banner").style.display = "none";
+        loadAnalytics();
+      }
+
+      document.getElementById("accept-cookies").addEventListener("click", function () {
+        localStorage.setItem("cookiesAccepted", "true");
+        document.getElementById("cookie-banner").style.display = "none";
+        loadAnalytics();
+      });
+    </script>
 
     <script type="text/babel" src="js/audio/AudioManager.js"></script>
     <script type="text/babel" src="js/audio/BackgroundMusic.js"></script>
