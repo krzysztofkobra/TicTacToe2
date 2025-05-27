@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixel Tic Tac Toe 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" /> -->
+    <style>
+      @font-face {
+        font-display: swap;
+        font-family: 'Press Start 2P';
+        font-style: normal;
+        font-weight: 400;
+        src: url('fonts/press-start-2p-v15-latin-regular.woff2') format('woff2');
+      }
+
+
+      body {
+        font-family: 'Press Start 2P', monospace;
+        background: #1a1a2e;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+      }
+
+      .pixel-border {
+        border: 3px solid;
+        border-image: linear-gradient(45deg, #0f0f23 25%, transparent 25%) 3;
+        box-shadow: 0 0 0 1px #333;
+      }
+
+      .game-cell {
+        background: #16213e;
+        border: 2px solid #0f0f23;
+        transition: all 0.1s ease;
+        position: relative;
+      }
+
+      .game-cell:hover {
+        background: #1e293b;
+        border-color: #00ff41;
+        transform: translateY(-1px);
+      }
+
+      .game-cell:active {
+        transform: translateY(1px);
+      }
+
+      .player-x {
+        color: #ff6b6b;
+        text-shadow: 2px 2px 0px #cc4444;
+      }
+
+      .player-o {
+        color: #00ff41;
+        text-shadow: 2px 2px 0px #00cc33;
+      }
+
+      .pixel-button {
+        background: #16213e;
+        border: 3px solid #0f0f23;
+        color: #ffffff;
+        transition: all 0.1s ease;
+        text-shadow: 1px 1px 0px #000;
+      }
+
+      .pixel-button:hover {
+        background: #1e293b;
+        border-color: #00ff41;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 0px #0f0f23;
+      }
+
+      .pixel-button:active {
+        transform: translateY(0px);
+        box-shadow: 0 2px 0px #0f0f23;
+      }
+
+      .pixel-button-red {
+        background: #ff6b6b;
+        border-color: #cc4444;
+      }
+
+      .pixel-button-red:hover {
+        background: #ff8888;
+        border-color: #ff6b6b;
+      }
+
+      .pixel-button-green {
+        background: #00ff41;
+        border-color: #00cc33;
+        color: #000;
+      }
+
+      .pixel-button-green:hover {
+        background: #33ff66;
+        border-color: #00ff41;
+      }
+
+      .pixel-button-purple {
+        background: #9c88ff;
+        border-color: #7766cc;
+      }
+
+      .pixel-button-purple:hover {
+        background: #b3a3ff;
+        border-color: #9c88ff;
+      }
+
+      @keyframes pixel-blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.5; }
+      }
+
+      .blink {
+        animation: pixel-blink 1s infinite;
+      }
+
+      @keyframes pixel-bounce {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-4px); }
+      }
+
+      .winner-bounce {
+        animation: pixel-bounce 0.5s infinite;
+      }
+
+      .pixel-container {
+        background: #0f0f23;
+        border: 4px solid #1a1a2e;
+        box-shadow: 4px 4px 0px #000;
+      }
+
+      .floating-particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      .particle {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: #00ff41;
+        opacity: 0.3;
+        animation: float 8s infinite linear;
+      }
+
+      @keyframes float {
+        0% { transform: translateY(100vh); opacity: 0; }
+        10% { opacity: 0.3; }
+        90% { opacity: 0.3; }
+        100% { transform: translateY(-20px); opacity: 0; }
+      }
+
+      .score-display {
+        background: #000;
+        border: 2px solid #00ff41;
+        color: #00ff41;
+        text-shadow: 1px 1px 0px #004411;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div class="floating-particles" id="particles"></div>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      const ParticleSystem = () => {
+        useEffect(() => {
+          const container = document.getElementById('particles');
+          const createParticle = () => {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDuration = (Math.random() * 4 + 6) + 's';
+            container.appendChild(particle);
+            
+            setTimeout(() => {
+              if (container.contains(particle)) {
+                container.removeChild(particle);
+              }
+            }, 10000);
+          };
+
+          const interval = setInterval(createParticle, 800);
+          return () => clearInterval(interval);
+        }, []);
+
+        return null;
+      };
+
+      const TicTacToe2 = () => {
+        const [gameMode, setGameMode] = useState(null);
+        const [board, setBoard] = useState(Array(9).fill(null));
+        const [currentPlayer, setCurrentPlayer] = useState('X');
+        const [moveHistory, setMoveHistory] = useState({ X: [], O: [] });
+        const [winner, setWinner] = useState(null);
+
+        const checkWinner = (board) => {
+          const lines = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+          ];
+          for (let line of lines) {
+            const [a, b, c] = line;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+              return board[a];
+            }
+          }
+          return null;
+        };
+
+        const handleCellClick = (index) => {
+          if (board[index] || winner) return;
+          const newBoard = [...board];
+          const newMoveHistory = { ...moveHistory };
+          newBoard[index] = currentPlayer;
+          newMoveHistory[currentPlayer].push(index);
+          if (newMoveHistory[currentPlayer].length > 3) {
+            const oldestMove = newMoveHistory[currentPlayer].shift();
+            newBoard[oldestMove] = null;
+          }
+          setBoard(newBoard);
+          setMoveHistory(newMoveHistory);
+          const gameWinner = checkWinner(newBoard);
+          if (gameWinner) {
+            setWinner(gameWinner);
+          } else {
+            setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
+          }
+        };
+
+        const resetGame = () => {
+          setBoard(Array(9).fill(null));
+          setCurrentPlayer('X');
+          setMoveHistory({ X: [], O: [] });
+          setWinner(null);
+        };
+
+        const goToMenu = () => {
+          setGameMode(null);
+          resetGame();
+        };
+
+        if (!gameMode) {
+          return (
+            <div className="min-h-screen flex items-center justify-center p-4">
+              <ParticleSystem />
+              <div className="pixel-container rounded-none p-8 text-center max-w-md w-full">
+                <h1 className="text-2xl font-black mb-2 text-white">
+                  TIC TAC TOE 2
+                </h1>
+                <h2 className="text-lg text-yellow-400 mb-6">
+                  PIXEL EDITION
+                </h2>
+                <div className="bg-gray-800 border-2 border-gray-600 p-4 mb-6">
+                  <p className="text-white text-xs leading-relaxed">
+                    RULE: MAX 3 PIECES PER PLAYER
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    4TH MOVE REMOVES 1ST PIECE!
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setGameMode('2players')}
+                    className="w-full pixel-button pixel-button-green py-3 px-6 text-sm font-bold"
+                  >
+                    2 PLAYER MODE
+                  </button>
+                  <button
+                    className="w-full pixel-button opacity-50 cursor-not-allowed py-3 px-6 text-sm font-bold"
+                    disabled
+                  >
+                    VS AI [LOCKED]
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <ParticleSystem />
+            <div className="pixel-container rounded-none p-6 max-w-lg w-full">
+              <div className="text-center mb-6">
+                <h1 className="text-xl font-black text-white mb-1">TIC TAC TOE 2</h1>
+                <h2 className="text-sm text-yellow-400">PIXEL EDITION</h2>
+              </div>
+
+              <div className="text-center mb-6">
+                {winner ? (
+                  <div className="bg-yellow-400 text-black p-4 mb-4 border-2 border-yellow-600">
+                    <div className="text-lg font-black winner-bounce">
+                      PLAYER {winner} WINS!
+                    </div>
+                    <div className="text-xs mt-1">
+                      GAME OVER
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-800 border-2 border-gray-600 p-3">
+                    <div className="text-sm text-white">
+                      TURN: <span className={`font-black text-lg blink ${currentPlayer === 'X' ? 'player-x' : 'player-o'}`}>
+                        {currentPlayer}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-6 w-72 mx-auto">
+                {board.map((cell, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleCellClick(index)}
+                    className="game-cell w-20 h-20 text-2xl font-black flex items-center justify-center"
+                  >
+                    <span className={cell === 'X' ? 'player-x' : cell === 'O' ? 'player-o' : ''}>
+                      {cell}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="score-display p-3 text-center">
+                  <div className="text-xs font-bold">PLAYER X</div>
+                  <div className="text-lg font-black">
+                    {moveHistory.X.length}/3
+                  </div>
+                </div>
+                <div className="score-display p-3 text-center">
+                  <div className="text-xs font-bold">PLAYER O</div>
+                  <div className="text-lg font-black">
+                    {moveHistory.O.length}/3
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-center mb-4">
+                <button
+                  onClick={resetGame}
+                  className="pixel-button pixel-button-red font-bold py-2 px-4 text-xs text-white"
+                >
+                  RESET
+                </button>
+                <button
+                  onClick={goToMenu}
+                  className="pixel-button pixel-button-purple font-bold py-2 px-4 text-xs"
+                >
+                  MENU
+                </button>
+              </div>
+
+              <div className="bg-gray-900 border-2 border-gray-700 p-3 text-center">
+                <div className="text-xs text-gray-300 space-y-1">
+                  <p>MAX 3 PIECES PER PLAYER</p>
+                  <p>4TH MOVE = 1ST PIECE GONE</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<TicTacToe2 />);
+    </script>
+  </body>
+</html>
