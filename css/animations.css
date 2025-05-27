@@ -1,0 +1,29 @@
+@keyframes pixel-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.5; }
+}
+
+@keyframes pixel-remove-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.2; }
+}
+
+@keyframes pixel-bounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes float {
+  0% { transform: translateY(100vh); opacity: 0; }
+  10% { opacity: 0.3; }
+  90% { opacity: 0.3; }
+  100% { transform: translateY(-20px); opacity: 0; }
+}
+
+.blink-remove {
+  animation: pixel-remove-blink 1s infinite;
+}
+
+.winner-bounce {
+  animation: pixel-bounce 0.5s infinite;
+}

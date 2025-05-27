@@ -1,0 +1,74 @@
+.game-cell {
+  background: #16213e;
+  border: 2px solid #0f0f23;
+  transition: all 0.1s ease;
+  position: relative;
+}
+
+.game-cell:hover {
+  background: #1e293b;
+  border-color: #00ff41;
+  transform: translateY(-1px);
+}
+
+.game-cell:active {
+  transform: translateY(1px);
+}
+
+.pixel-button {
+  background: #16213e;
+  border: 3px solid #0f0f23;
+  color: #ffffff;
+  transition: all 0.1s ease;
+  text-shadow: 1px 1px 0px #000;
+}
+
+.pixel-button:hover {
+  background: #1e293b;
+  border-color: #00ff41;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0px #0f0f23;
+}
+
+.pixel-button:active {
+  transform: translateY(0px);
+  box-shadow: 0 2px 0px #0f0f23;
+}
+
+.pixel-button-red {
+  background: #ff6b6b;
+  border-color: #cc4444;
+}
+
+.pixel-button-red:hover {
+  background: #ff8888;
+  border-color: #ff6b6b;
+}
+
+.pixel-button-green {
+  background: #00ff41;
+  border-color: #00cc33;
+  color: #000;
+}
+
+.pixel-button-green:hover {
+  background: #33ff66;
+  border-color: #00ff41;
+}
+
+.pixel-button-purple {
+  background: #9c88ff;
+  border-color: #7766cc;
+}
+
+.pixel-button-purple:hover {
+  background: #b3a3ff;
+  border-color: #9c88ff;
+}
+
+.score-display {
+  background: #000;
+  border: 2px solid #00ff41;
+  color: #00ff41;
+  text-shadow: 1px 1px 0px #004411;
+}
