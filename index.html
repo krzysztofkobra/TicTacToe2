@@ -115,8 +115,13 @@
         51%, 100% { opacity: 0.5; }
       }
 
-      .blink {
-        animation: pixel-blink 1s infinite;
+      @keyframes pixel-remove-blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0.2; }
+      }
+
+      .blink-remove {
+        animation: pixel-remove-blink 1s infinite;
       }
 
       @keyframes pixel-bounce {
@@ -175,6 +180,143 @@
     <script type="text/babel">
       const { useState, useEffect } = React;
 
+      // Audio Context and Sound Generation
+      const AudioManager = {
+        audioContext: null,
+        
+        init() {
+          if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          }
+        },
+
+        playTone(frequency, duration, type = 'square', volume = 0.1) {
+          this.init();
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+          oscillator.type = type;
+          
+          gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+          
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + duration);
+        },
+
+        playMove() {
+          this.playTone(800, 0.1, 'square', 0.15);
+        },
+
+        playRemove() {
+          this.init();
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+          
+          oscillator.frequency.setValueAtTime(600, this.audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(200, this.audioContext.currentTime + 0.3);
+          oscillator.type = 'sawtooth';
+          
+          gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.3);
+          
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + 0.3);
+        },
+
+        playWin() {
+          const notes = [523, 659, 784, 1047];
+          notes.forEach((note, index) => {
+            setTimeout(() => {
+              this.playTone(note, 0.4, 'triangle', 0.2);
+            }, index * 150);
+          });
+        },
+
+        playHover() {
+          this.playTone(1200, 0.05, 'sine', 0.08);
+        },
+
+        playMenuSelect() {
+          this.playTone(440, 0.15, 'square', 0.12);
+          setTimeout(() => {
+            this.playTone(880, 0.15, 'square', 0.12);
+          }, 75);
+        },
+
+        backgroundMusic: {
+          isPlaying: false,
+          oscillators: [],
+          gainNodes: [],
+          
+          start() {
+            if (this.isPlaying) return;
+            AudioManager.init();
+            this.isPlaying = true;
+            this.playLoop();
+          },
+
+          stop() {
+            this.isPlaying = false;
+            this.oscillators.forEach(osc => {
+              try { osc.stop(); } catch(e) {}
+            });
+            this.oscillators = [];
+            this.gainNodes = [];
+          },
+
+          playLoop() {
+            if (!this.isPlaying) return;
+            
+            const chords = [
+              [220, 277, 330],
+              [196, 247, 294],
+              [174, 220, 261],
+              [196, 247, 294]
+            ];
+            
+            chords.forEach((chord, chordIndex) => {
+              setTimeout(() => {
+                if (!this.isPlaying) return;
+                
+                chord.forEach((freq, noteIndex) => {
+                  const osc = AudioManager.audioContext.createOscillator();
+                  const gain = AudioManager.audioContext.createGain();
+                  
+                  osc.connect(gain);
+                  gain.connect(AudioManager.audioContext.destination);
+                  
+                  osc.frequency.setValueAtTime(freq, AudioManager.audioContext.currentTime);
+                  osc.type = 'triangle';
+                  
+                  gain.gain.setValueAtTime(0.02, AudioManager.audioContext.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.001, AudioManager.audioContext.currentTime + 1.8);
+                  
+                  osc.start(AudioManager.audioContext.currentTime);
+                  osc.stop(AudioManager.audioContext.currentTime + 2);
+                  
+                  this.oscillators.push(osc);
+                  this.gainNodes.push(gain);
+                });
+              }, chordIndex * 2000);
+            });
+            
+            setTimeout(() => {
+              if (this.isPlaying) {
+                this.playLoop();
+              }
+            }, 8000);
+          }
+        }
+      };
+
       const ParticleSystem = () => {
         useEffect(() => {
           const container = document.getElementById('particles');
@@ -205,6 +347,29 @@
         const [currentPlayer, setCurrentPlayer] = useState('X');
         const [moveHistory, setMoveHistory] = useState({ X: [], O: [] });
         const [winner, setWinner] = useState(null);
+        const [soundEnabled, setSoundEnabled] = useState(true);
+        const [musicEnabled, setMusicEnabled] = useState(false);
+
+        useEffect(() => {
+          const initAudio = () => {
+            AudioManager.init();
+            document.removeEventListener('click', initAudio);
+          };
+          document.addEventListener('click', initAudio);
+          return () => document.removeEventListener('click', initAudio);
+        }, []);
+
+        useEffect(() => {
+          if (musicEnabled && gameMode) {
+            AudioManager.backgroundMusic.start();
+          } else {
+            AudioManager.backgroundMusic.stop();
+          }
+          
+          return () => {
+            AudioManager.backgroundMusic.stop();
+          };
+        }, [musicEnabled, gameMode]);
 
         const checkWinner = (board) => {
           const lines = [
@@ -221,8 +386,25 @@
           return null;
         };
 
+        const getPositionToRemove = () => {
+          if (moveHistory[currentPlayer].length >= 3) {
+            return moveHistory[currentPlayer][0];
+          }
+          return null;
+        };
+
         const handleCellClick = (index) => {
           if (board[index] || winner) return;
+          
+          const willRemovePiece = moveHistory[currentPlayer].length >= 3;
+          
+          if (soundEnabled) {
+            AudioManager.playMove();
+            if (willRemovePiece) {
+              setTimeout(() => AudioManager.playRemove(), 100);
+            }
+          }
+          
           const newBoard = [...board];
           const newMoveHistory = { ...moveHistory };
           newBoard[index] = currentPlayer;
@@ -236,6 +418,9 @@
           const gameWinner = checkWinner(newBoard);
           if (gameWinner) {
             setWinner(gameWinner);
+            if (soundEnabled) {
+              setTimeout(() => AudioManager.playWin(), 200);
+            }
           } else {
             setCurrentPlayer(currentPlayer === 'X' ? 'O' : 'X');
           }
@@ -252,6 +437,8 @@
           setGameMode(null);
           resetGame();
         };
+
+        const positionToRemove = getPositionToRemove();
 
         if (!gameMode) {
           return (
@@ -274,7 +461,11 @@
                 </div>
                 <div className="space-y-4">
                   <button
-                    onClick={() => setGameMode('2players')}
+                    onClick={() => {
+                      if (soundEnabled) AudioManager.playMenuSelect();
+                      setGameMode('2players');
+                    }}
+                    onMouseEnter={() => soundEnabled && AudioManager.playHover()}
                     className="w-full pixel-button pixel-button-green py-3 px-6 text-sm font-bold"
                   >
                     2 PLAYER MODE
@@ -285,6 +476,33 @@
                   >
                     VS AI [LOCKED]
                   </button>
+                  
+                  <div className="mt-6 space-y-2">
+                    <div className="flex items-center justify-between bg-gray-800 border-2 border-gray-600 p-2">
+                      <span className="text-xs text-white">SOUND FX</span>
+                      <button
+                        onClick={() => {
+                          setSoundEnabled(!soundEnabled);
+                          if (!soundEnabled) AudioManager.playMenuSelect();
+                        }}
+                        className={`pixel-button text-xs py-1 px-3 ${soundEnabled ? 'pixel-button-green' : 'pixel-button-red'}`}
+                      >
+                        {soundEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between bg-gray-800 border-2 border-gray-600 p-2">
+                      <span className="text-xs text-white">MUSIC</span>
+                      <button
+                        onClick={() => {
+                          setMusicEnabled(!musicEnabled);
+                          if (soundEnabled) AudioManager.playMenuSelect();
+                        }}
+                        className={`pixel-button text-xs py-1 px-3 ${musicEnabled ? 'pixel-button-green' : 'pixel-button-red'}`}
+                      >
+                        {musicEnabled ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -313,7 +531,7 @@
                 ) : (
                   <div className="bg-gray-800 border-2 border-gray-600 p-3">
                     <div className="text-sm text-white">
-                      TURN: <span className={`font-black text-lg blink ${currentPlayer === 'X' ? 'player-x' : 'player-o'}`}>
+                      TURN: <span className={`font-black text-lg ${currentPlayer === 'X' ? 'player-x' : 'player-o'}`}>
                         {currentPlayer}
                       </span>
                     </div>
@@ -326,9 +544,13 @@
                   <button
                     key={index}
                     onClick={() => handleCellClick(index)}
+                    onMouseEnter={() => !cell && soundEnabled && AudioManager.playHover()}
                     className="game-cell w-20 h-20 text-2xl font-black flex items-center justify-center"
                   >
-                    <span className={cell === 'X' ? 'player-x' : cell === 'O' ? 'player-o' : ''}>
+                    <span className={`
+                      ${cell === 'X' ? 'player-x' : cell === 'O' ? 'player-o' : ''}
+                      ${positionToRemove === index ? 'blink-remove' : ''}
+                    `}>
                       {cell}
                     </span>
                   </button>
@@ -352,13 +574,21 @@
 
               <div className="flex gap-3 justify-center mb-4">
                 <button
-                  onClick={resetGame}
+                  onClick={() => {
+                    if (soundEnabled) AudioManager.playMenuSelect();
+                    resetGame();
+                  }}
+                  onMouseEnter={() => soundEnabled && AudioManager.playHover()}
                   className="pixel-button pixel-button-red font-bold py-2 px-4 text-xs text-white"
                 >
                   RESET
                 </button>
                 <button
-                  onClick={goToMenu}
+                  onClick={() => {
+                    if (soundEnabled) AudioManager.playMenuSelect();
+                    goToMenu();
+                  }}
+                  onMouseEnter={() => soundEnabled && AudioManager.playHover()}
                   className="pixel-button pixel-button-purple font-bold py-2 px-4 text-xs"
                 >
                   MENU
